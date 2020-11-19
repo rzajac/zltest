@@ -1,4 +1,4 @@
-module github.com/rzajac/zlogtest
+module github.com/rzajac/zltest
 
 go 1.15
 

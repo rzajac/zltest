@@ -1,29 +1,36 @@
-package zlogtest
+package zltest
 
 import (
 	"fmt"
 	"math"
 	"strconv"
-	"testing"
 	"time"
 
 	"github.com/rs/zerolog"
 )
 
-// KeyStatus represents a status of searching a key in log entry.
+// KeyStatus represents a status of searching and deserialization
+// of a key in log entry.
 type KeyStatus string
 
 const (
 	KeyFound     KeyStatus = "KeyFound"     // Key found successfully.
-	KeyBadType   KeyStatus = "KeyBadType"   // Key found but it is not in expected type.
+	KeyBadType   KeyStatus = "KeyBadType"   // Key found but it's not of expected type.
 	KeyMissing   KeyStatus = "KeyMissing"   // Key is not in the log entry.
 	KeyBadFormat KeyStatus = "KeyBadFormat" // Key found but its format is wrong.
 )
 
 // Entry represents zerolog log entry.
 type Entry struct {
-	m  map[string]interface{} // JSON decoded log entry.
-	tb testing.TB             // Test or benchmark manager.
+	raw string                 // Entry as it was written to the writer.
+	m   map[string]interface{} // JSON decoded log entry.
+	t   T                      // Test manager.
+}
+
+// String implements fmt.Stringer interface and returns log entry
+// as it was written to the writer.
+func (ent *Entry) String() string {
+	return ent.raw
 }
 
 // Str returns log entry key as a string.
@@ -77,11 +84,11 @@ func (ent *Entry) Time(key string) (time.Time, KeyStatus) {
 
 // ExpStr tests log entry has key, its value is a string and it's equal to exp.
 func (ent *Entry) ExpStr(key string, exp string) {
-	ent.tb.Helper()
+	ent.t.Helper()
 	got, status := ent.Str(key)
 	if status == KeyFound {
 		if got != exp {
-			ent.tb.Errorf(
+			ent.t.Errorf(
 				"expected entry key '%s' to have value '%s' but got '%s'",
 				key,
 				exp,
@@ -90,43 +97,58 @@ func (ent *Entry) ExpStr(key string, exp string) {
 		}
 		return
 	}
-	ent.tb.Error(formatError(status, key, "string"))
+	ent.t.Error(formatError(status, key, "string"))
 }
 
 // ExpTime tests log entry has key, its value is a string representing time in
 // zerolog.TimeFieldFormat and it's equal to exp.
 func (ent *Entry) ExpTime(key string, exp time.Time) {
-	ent.ExpTimeWithin(key, exp, 0)
+	ent.t.Helper()
+	got, status := ent.Time(key)
+	if status == KeyFound {
+		if !exp.Equal(got) {
+			ent.t.Errorf("expected entry '%s' to be '%s' but is '%s'",
+				key,
+				exp.Format(zerolog.TimeFieldFormat),
+				got.Format(zerolog.TimeFieldFormat),
+			)
+		}
+		return
+	}
+	ent.t.Error(formatError(status, key, "string"))
+
 }
 
 // ExpDur tests log entry has key and its value is equal to exp time.Duration.
 // The duration vale in the entry is multiplied by zerolog.DurationFieldUnit
 // before the comparison.
 func (ent *Entry) ExpDur(key string, exp time.Duration) {
-	ent.tb.Helper()
+	ent.t.Helper()
 	got, status := ent.Float64(key)
 	if status == KeyFound {
 		gotD := time.Duration(int(got)) * zerolog.DurationFieldUnit
 		if gotD != exp {
-			ent.tb.Errorf(
-				"expected entry key '%s' to have value '%s' but got '%s'",
+			ent.t.Errorf(
+				"expected entry key '%s' to have value '%d' (%s) but got '%d' (%s)",
 				key,
-				exp,
-				gotD,
+				exp/zerolog.DurationFieldUnit,
+				exp.String(),
+				gotD/zerolog.DurationFieldUnit,
+				gotD.String(),
 			)
 		}
 		return
 	}
-	ent.tb.Error(formatError(status, key, "number"))
+	ent.t.Error(formatError(status, key, "number"))
 }
 
 // ExpBool tests log entry has a key, its value is boolean and equal to exp.
 func (ent *Entry) ExpBool(key string, exp bool) {
-	ent.tb.Helper()
+	ent.t.Helper()
 	got, status := ent.Bool(key)
 	if status == KeyFound {
 		if got != exp {
-			ent.tb.Errorf(
+			ent.t.Errorf(
 				"expected entry key '%s' to have value '%v' but got '%v'",
 				key,
 				exp,
@@ -135,10 +157,10 @@ func (ent *Entry) ExpBool(key string, exp bool) {
 		}
 		return
 	}
-	ent.tb.Error(formatError(status, key, "bool"))
+	ent.t.Error(formatError(status, key, "bool"))
 }
 
-// ExpLoggedWithin tests logg entry was logged at exp time. The actual time
+// ExpLoggedWithin tests log entry was logged at exp time. The actual time
 // may be within +/- diff.
 func (ent *Entry) ExpLoggedWithin(exp time.Time, diff time.Duration) {
 	ent.ExpTimeWithin(zerolog.TimestampFieldName, exp, diff)
@@ -148,41 +170,43 @@ func (ent *Entry) ExpLoggedWithin(exp time.Time, diff time.Duration) {
 // time in zerolog.TimeFieldFormat and it's equal to exp time. The actual time
 // may be within +/- diff.
 func (ent *Entry) ExpTimeWithin(key string, exp time.Time, diff time.Duration) {
-	ent.tb.Helper()
+	ent.t.Helper()
 	got, status := ent.Time(key)
 	if status == KeyFound {
 		gotD := math.Abs(float64(exp.Sub(got)))
 		if gotD > float64(diff) {
-			ent.tb.Errorf("expected entry '%s' to be within '%s' but is '%s'",
+			ent.t.Errorf("expected entry '%s' to be within '%s' but difference is '%s'",
 				key,
-				diff,
-				time.Duration(gotD),
+				diff.String(),
+				time.Duration(gotD).String(),
 			)
 		}
 		return
 	}
-	ent.tb.Error(formatError(status, key, "string"))
+	ent.t.Error(formatError(status, key, "string"))
 }
 
-// ExpMsg tests log entry key (zerolog.MessageFieldName) is equal to exp.
+// ExpMsg tests log entry message field (zerolog.MessageFieldName) is
+// equal to exp.
 func (ent *Entry) ExpMsg(exp string) {
 	ent.ExpStr(zerolog.MessageFieldName, exp)
 }
 
-// ExpLevel tests log entry level field (zerolog.LevelFieldName) is equal to exp.
+// ExpLevel tests log entry level field (zerolog.LevelFieldName) is
+// equal to exp.
 func (ent *Entry) ExpLevel(exp zerolog.Level) {
 	ent.ExpStr(zerolog.LevelFieldName, exp.String())
 }
 
 // ExpNum tests log entry has key and its numerical value is equal to exp.
 func (ent *Entry) ExpNum(key string, exp float64) {
-	ent.tb.Helper()
+	ent.t.Helper()
 	got, status := ent.Float64(key)
 	if status == KeyFound {
 		if got != exp {
 			expS := strconv.FormatFloat(exp, 'f', -1, 64)
 			gotS := strconv.FormatFloat(got, 'f', -1, 64)
-			ent.tb.Errorf(
+			ent.t.Errorf(
 				"expected entry key '%s' to have value '%s' but got '%s'",
 				key,
 				expS,
@@ -191,7 +215,7 @@ func (ent *Entry) ExpNum(key string, exp float64) {
 		}
 		return
 	}
-	ent.tb.Error(formatError(status, key, "number"))
+	ent.t.Error(formatError(status, key, "number"))
 }
 
 // formatError formats error message based on status of log entry key search.
