@@ -1,3 +1,6 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/rzajac/zltest)](https://goreportcard.com/report/github.com/rzajac/zltest)
+[![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](https://pkg.go.dev/github.com/rzajac/zltest)
+
 Logging is an integral part of most of the applications and as such it has to 
 be tested as well. Package `zltest` provides facilities to test 
 [zerolog](https://github.com/rs/zerolog) log messages.
