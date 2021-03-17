@@ -31,7 +31,7 @@ func (tst *Tester) Write(p []byte) (n int, err error) {
 	tst.mx.Lock()
 	defer tst.mx.Unlock()
 
-	tst.cnt += 1
+	tst.cnt++
 	tst.buf = append(tst.buf, p...)
 	return len(p), nil
 }
@@ -51,7 +51,7 @@ func (tst *Tester) String() string {
 
 // Entries returns all logged entries. It calls Fatal if
 // any of the log entries cannot be decoded.
-func (tst *Tester) Entries() []*Entry {
+func (tst *Tester) Entries() Entries {
 	tst.mx.RLock()
 	defer tst.mx.RUnlock()
 
@@ -73,18 +73,18 @@ func (tst *Tester) Entries() []*Entry {
 		tst.t.Fatal(err)
 	}
 
-	return ets
+	return Entries{e: ets, t: tst.t}
 }
 
 // Filter returns only entries matching log level.
-func (tst *Tester) Filter(level zerolog.Level) []*Entry {
+func (tst *Tester) Filter(level zerolog.Level) Entries {
 	ets := make([]*Entry, 0)
-	for _, ent := range tst.Entries() {
+	for _, ent := range tst.Entries().Get() {
 		if lvl, _ := ent.Str(zerolog.LevelFieldName); lvl == level.String() {
 			ets = append(ets, ent)
 		}
 	}
-	return ets
+	return Entries{e: ets, t: tst.t}
 }
 
 // FirstEntry returns first log entry or nil if no log entries written
@@ -93,7 +93,7 @@ func (tst *Tester) FirstEntry() *Entry {
 	tst.mx.RLock()
 	defer tst.mx.RUnlock()
 
-	ets := tst.Entries()
+	ets := tst.Entries().Get()
 	if len(ets) == 0 {
 		return nil
 	}
@@ -106,7 +106,7 @@ func (tst *Tester) LastEntry() *Entry {
 	tst.mx.RLock()
 	defer tst.mx.RUnlock()
 
-	ets := tst.Entries()
+	ets := tst.Entries().Get()
 	if len(ets) == 0 {
 		return nil
 	}
