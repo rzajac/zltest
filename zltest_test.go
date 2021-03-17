@@ -47,7 +47,7 @@ func Test_Tester_Entries(t *testing.T) {
 	log.Error().Str("keyE", "valE").Send()
 
 	// --- Then ---
-	assert.Len(t, tst.Entries(), 2)
+	assert.Len(t, tst.Entries().Get(), 2)
 }
 
 func Test_Tester_Filter(t *testing.T) {
@@ -61,10 +61,10 @@ func Test_Tester_Filter(t *testing.T) {
 	log.Debug().Str("keyD", "valD").Send()
 
 	// --- Then ---
-	assert.Len(t, tst.Filter(zerolog.InfoLevel), 1)
-	assert.Len(t, tst.Filter(zerolog.ErrorLevel), 1)
-	assert.Len(t, tst.Filter(zerolog.DebugLevel), 1)
-	assert.Len(t, tst.Filter(zerolog.FatalLevel), 0)
+	assert.Len(t, tst.Filter(zerolog.InfoLevel).Get(), 1)
+	assert.Len(t, tst.Filter(zerolog.ErrorLevel).Get(), 1)
+	assert.Len(t, tst.Filter(zerolog.DebugLevel).Get(), 1)
+	assert.Len(t, tst.Filter(zerolog.FatalLevel).Get(), 0)
 }
 
 func Test_Tester_Entries_NoEntries(t *testing.T) {
@@ -72,7 +72,7 @@ func Test_Tester_Entries_NoEntries(t *testing.T) {
 	tst := New(t)
 
 	// --- When ---
-	ets := tst.Entries()
+	ets := tst.Entries().Get()
 
 	// --- Then ---
 	assert.NotNil(t, ets)

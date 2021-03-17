@@ -186,11 +186,8 @@ func Test_Entry_ExpStr_NotEqual(t *testing.T) {
 	mck := &TMock{}
 	mck.On("Helper")
 	mck.On(
-		"Errorf",
-		"expected entry key '%s' to have value '%s' but got '%s'",
-		"key",
-		"value",
-		"val",
+		"Error",
+		"expected entry key 'key' to have value 'value' but got 'val'",
 	)
 
 	tst := New(mck)
@@ -257,11 +254,12 @@ func Test_Entry_ExpTime_NotEqual(t *testing.T) {
 	mck := &TMock{}
 	mck.On("Helper")
 	mck.On(
-		"Errorf",
-		"expected entry '%s' to be '%s' but is '%s'",
-		"key",
-		exp.Format(time.RFC3339Nano),
-		got.Format(time.RFC3339Nano),
+		"Error",
+		fmt.Sprintf("expected entry '%s' to be '%s' but is '%s'",
+			"key",
+			exp.Format(time.RFC3339Nano),
+			got.Format(time.RFC3339Nano),
+		),
 	)
 
 	tst := New(mck)
@@ -320,13 +318,14 @@ func Test_Entry_ExpDur_NotEqual(t *testing.T) {
 	mck := &TMock{}
 	mck.On("Helper")
 	mck.On(
-		"Errorf",
-		"expected entry key '%s' to have value '%d' (%s) but got '%d' (%s)",
-		"key",
-		exp/zerolog.DurationFieldUnit,
-		exp.String(),
-		got/zerolog.DurationFieldUnit,
-		got.String(),
+		"Error",
+		fmt.Sprintf("expected entry key '%s' to have value '%d' (%s) but got '%d' (%s)",
+			"key",
+			exp/zerolog.DurationFieldUnit,
+			exp.String(),
+			got/zerolog.DurationFieldUnit,
+			got.String(),
+		),
 	)
 
 	tst := New(mck)
@@ -381,11 +380,8 @@ func Test_Entry_ExpBool_NotEqual(t *testing.T) {
 	mck := &TMock{}
 	mck.On("Helper")
 	mck.On(
-		"Errorf",
-		"expected entry key '%s' to have value '%v' but got '%v'",
-		"key",
-		true,
-		false,
+		"Error",
+		"expected entry key 'key' to have value 'true' but got 'false'",
 	)
 
 	tst := New(mck)
@@ -513,11 +509,8 @@ func Test_Entry_ExpNum_NotEqual(t *testing.T) {
 	mck := &TMock{}
 	mck.On("Helper")
 	mck.On(
-		"Errorf",
-		"expected entry key '%s' to have value '%s' but got '%s'",
-		"key",
-		"1.231",
-		"1.23",
+		"Error",
+		"expected entry key 'key' to have value '1.231' but got '1.23'",
 	)
 
 	tst := New(mck)
