@@ -1,4 +1,4 @@
-module github.com/rzajac/zltest
+module github.com/jsautret/zltest
 
 go 1.15
 
