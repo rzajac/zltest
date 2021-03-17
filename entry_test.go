@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	. "github.com/rzajac/zltest/internal"
+	. "github.com/jsautret/zltest/internal"
 )
 
 func Test_Entry_String(t *testing.T) {

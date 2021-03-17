@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/jsautret/zltest/internal"
 	"github.com/rs/zerolog"
-	. "github.com/rzajac/zltest/internal"
 )
 
 func Test_Entries(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	. "github.com/rzajac/zltest/internal"
+	. "github.com/jsautret/zltest/internal"
 )
 
 func Test_Tester_Len(t *testing.T) {
