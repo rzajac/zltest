@@ -20,7 +20,7 @@ go get github.com/rzajac/zltest
 func Test_ServiceLogsProperly(t *testing.T) {
     // --- Given ---
     // Crate zerolog test helper. 
-    // tst := zltest.New(t)
+    tst := zltest.New(t)
 
     // Configure zerolog and pas tester as a writer.     
     log := zerolog.New(tst).With().Timestamp().Logger()
