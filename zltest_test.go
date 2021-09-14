@@ -139,3 +139,18 @@ func Test_Tester_LastEntry_NoEntries(t *testing.T) {
 	// --- Then ---
 	assert.Nil(t, tst.LastEntry())
 }
+
+func Test_Tester_Reset(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+	log.Info().Str("keyI", "valI").Send()
+	log.Error().Str("keyE", "valE").Send()
+
+	// --- When ---
+	tst.Reset()
+
+	// --- Then ---
+	assert.Exactly(t, 0, tst.Len())
+	assert.Exactly(t, "", tst.String())
+}

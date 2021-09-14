@@ -162,7 +162,6 @@ func Test_Entry(t *testing.T) {
 	entry.ExpNum("key0", 123)
 	entry.ExpMsg("message")
 	entry.ExpLevel(zerolog.ErrorLevel)
-	fmt.Println(tst.String())
 }
 
 func Test_Entry_ExpStr_Equal(t *testing.T) {

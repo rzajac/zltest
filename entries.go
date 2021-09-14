@@ -14,13 +14,13 @@ func (ets Entries) Get() []*Entry {
 }
 
 // ExpStr tests that at least one log entry has key, its value is a
-// string and it's equal to exp.
+// string, and it's equal to exp.
 func (ets Entries) ExpStr(key string, exp string) {
 	ets.exp(func(e *Entry) string { return e.expStr(key, exp) })
 }
 
 // NotExpStr tests that no log entry has key, its value is a
-// string and it's equal to exp.
+// string, and it's equal to exp.
 func (ets Entries) NotExpStr(key string, exp string) {
 	ets.notExp(func(e *Entry) string { return e.expStr(key, exp) })
 }

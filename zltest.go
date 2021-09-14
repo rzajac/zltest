@@ -113,6 +113,15 @@ func (tst *Tester) LastEntry() *Entry {
 	return ets[len(ets)-1]
 }
 
+// Reset resets the Tester.
+func (tst *Tester) Reset() {
+	tst.mx.Lock()
+	defer tst.mx.Unlock()
+
+	tst.cnt = 0
+	tst.buf = tst.buf[:0]
+}
+
 // T is a subset of testing.TB interface.
 // It's primarily used to test zltest package but can be used to implement
 // custom actions to be taken on errors.
