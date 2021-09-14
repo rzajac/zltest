@@ -26,6 +26,11 @@ func New(t T) *Tester {
 	}
 }
 
+// Logger returns zerolog.Logger using this tester as io.Writer.
+func (tst *Tester) Logger() zerolog.Logger {
+	return zerolog.New(tst)
+}
+
 // Write implements io.Writer interface.
 func (tst *Tester) Write(p []byte) (n int, err error) {
 	tst.mx.Lock()

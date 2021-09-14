@@ -10,6 +10,19 @@ import (
 	. "github.com/rzajac/zltest/internal"
 )
 
+func Test_Tester_Logger(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := tst.Logger()
+
+	// --- When ---
+	log.Info().Str("keyI", "valI").Send()
+	log.Error().Str("keyE", "valE").Send()
+
+	// --- Then ---
+	assert.Exactly(t, 2, tst.Len())
+}
+
 func Test_Tester_Len(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
