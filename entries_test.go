@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 
 	. "github.com/rzajac/zltest/internal"
 )
@@ -28,6 +29,80 @@ func Test_Entries(t *testing.T) {
 	tst.Entries().ExpMsg("message0")
 }
 
+func Test_Entries_ExpEntry(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+
+	log.Error().Int("key0", 0).Msg("message0")
+	log.Error().Int("key1.1", 1).Bool("key1.2", true).Msg("message1")
+	log.Error().Float64("key2", 2.2).Msg("message2")
+
+	// --- Then ---
+	ent := tst.Entries().ExpEntry(0)
+	ent.ExpNum("key0", 0)
+
+	ent = tst.Entries().ExpEntry(1)
+	ent.ExpNum("key1.1", 1)
+	ent.ExpBool("key1.2", true)
+	ent.ExpMsg("message1")
+
+	ent = tst.Entries().ExpEntry(2)
+	ent.ExpNum("key2", 2.2)
+	ent.ExpMsg("message2")
+}
+
+func Test_Entries_ExpEntry_Fatal(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Fatalf", "expected %d%s logged entry to exist", 3, "rd")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+
+	log.Error().Int("key0", 0).Msg("message0")
+	log.Error().Int("key1.1", 1).Bool("key1.2", true).Msg("message1")
+	log.Error().Float64("key2", 2.2).Msg("message2")
+
+	// --- When ---
+	ent := tst.Entries().ExpEntry(3)
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+	assert.Nil(t, ent)
+}
+
+func Test_Entries_Len(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+
+	// --- When ---
+	log.Error().Int("key0", 0).Msg("message0")
+	log.Error().Int("key1.1", 1).Bool("key1.2", true).Msg("message1")
+	log.Error().Float64("key2", 2.2).Msg("message2")
+
+	// --- Then ---
+	tst.Entries().ExpLen(3)
+}
+
+func Test_Entries_Len_Error(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Errorf", "expected %d entries got %d", 3, 1)
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+
+	log.Error().Int("key0", 0).Msg("message0")
+
+	// --- When ---
+	tst.Entries().ExpLen(3)
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
 func Test_Entries_NotFound(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
@@ -45,7 +120,7 @@ func Test_Entries_NotFound(t *testing.T) {
 func Test_Entries_Empty(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 	tst := New(mck)
 
 	// --- When ---
@@ -75,7 +150,7 @@ func Test_Entries_ExpBool_NotFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -120,7 +195,7 @@ func Test_Entries_ExpTime_NotFound(t *testing.T) {
 
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	exp := time.Now()
 	got := exp.Add(time.Second)
@@ -168,7 +243,7 @@ func Test_Entries_ExpDur_NotFound(t *testing.T) {
 
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	got := 43 * time.Second
 	exp := 42 * time.Second
@@ -208,7 +283,7 @@ func Test_Entries_ExpNum_NotFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -282,7 +357,7 @@ func Test_Entries_ExpString_NotFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -301,7 +376,7 @@ func Test_Entries_ExpString_Filter_Found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -320,7 +395,7 @@ func Test_Entries_ExpString_Filter_NotFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -339,7 +414,7 @@ func Test_Entries_ExpString_NoKey(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "No matching log entry was found")
+	mck.On("Error", "no matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
@@ -376,7 +451,7 @@ func Test_Entries_ExpString_NotExp_Found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
-	mck.On("Error", "Matching log entry was found")
+	mck.On("Error", "matching log entry found")
 
 	tst := New(mck)
 	log := zerolog.New(tst)

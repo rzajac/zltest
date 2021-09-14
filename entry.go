@@ -16,7 +16,7 @@ type KeyStatus string
 const (
 	// KeyFound is used when Key found successfully.
 	KeyFound KeyStatus = "KeyFound"
-	// KeyBadType is used when Key found but it's not of expected type.
+	// KeyBadType is used when Key found, but it's not of expected type.
 	KeyBadType KeyStatus = "KeyBadType"
 	// KeyMissing is used when Key is not in the log entry.
 	KeyMissing KeyStatus = "KeyMissing"
@@ -86,7 +86,7 @@ func (ent *Entry) Time(key string) (time.Time, KeyStatus) {
 	return time.Time{}, KeyMissing
 }
 
-// ExpStr tests log entry has key, its value is a string and it's equal to exp.
+// ExpStr tests log entry has key, its value is a string, and it's equal to exp.
 func (ent *Entry) ExpStr(key string, exp string) {
 	ent.t.Helper()
 	if err := ent.expStr(key, exp); err != "" {

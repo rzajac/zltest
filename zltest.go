@@ -54,8 +54,8 @@ func (tst *Tester) String() string {
 	return string(tst.buf)
 }
 
-// Entries returns all logged entries. It calls Fatal if
-// any of the log entries cannot be decoded.
+// Entries returns all logged entries in the order they were logged. It calls
+// Fatal if any of the log entries cannot be decoded.
 func (tst *Tester) Entries() Entries {
 	tst.mx.RLock()
 	defer tst.mx.RUnlock()

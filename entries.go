@@ -13,6 +13,39 @@ func (ets Entries) Get() []*Entry {
 	return ets.e
 }
 
+// ExpEntry returns nth logged entry.
+func (ets Entries) ExpEntry(n int) *Entry {
+	if n < len(ets.e) {
+		return ets.e[n]
+	}
+	ets.t.Fatalf("expected %d%s logged entry to exist", n, ordinal(n))
+	return nil
+}
+
+// ordinal returns English ordinal for a whole number.
+func ordinal(n int) string {
+	switch n {
+	case 0:
+		return "th"
+	case 1:
+		return "st"
+	case 2:
+		return "nd"
+	case 3:
+		return "rd"
+	default:
+		return "th"
+	}
+}
+
+// ExpLen tests that there is want number of entries.
+func (ets Entries) ExpLen(want int) {
+	have := len(ets.e)
+	if have != want {
+		ets.t.Errorf("expected %d entries got %d", want, have)
+	}
+}
+
 // ExpStr tests that at least one log entry has key, its value is a
 // string, and it's equal to exp.
 func (ets Entries) ExpStr(key string, exp string) {
@@ -96,14 +129,14 @@ func (ets Entries) exp(f func(*Entry) string) {
 			return
 		}
 	}
-	ets.t.Error("No matching log entry was found")
+	ets.t.Error("no matching log entry found")
 }
 
 func (ets Entries) notExp(f func(*Entry) string) {
 	e := ets.Get()
 	for ent := range e {
 		if f(e[ent]) == "" {
-			ets.t.Error("Matching log entry was found")
+			ets.t.Error("matching log entry found")
 		}
 	}
 }
