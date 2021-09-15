@@ -26,6 +26,62 @@ func Test_Entry_String(t *testing.T) {
 	assert.Exactly(t, exp, got)
 }
 
+func Test_Entry_ExpKey(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+
+	// --- When ---
+	log.Error().Str("key0", "val0").Send()
+
+	// --- Then ---
+	tst.LastEntry().ExpKey("key0")
+}
+
+func Test_Entry_ExpKey_Error(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Errorf", "expected %s field to be present", "key1")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Str("key0", "val0").Send()
+
+	// --- When ---
+	tst.LastEntry().ExpKey("key1")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_NotExpKey(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+
+	// --- When ---
+	log.Error().Str("key0", "val0").Send()
+
+	// --- Then ---
+	tst.LastEntry().NotExpKey("key1")
+}
+
+func Test_Entry_NotExpKey_Error(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Errorf", "expected %s field to be not present", "key0")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Str("key0", "val0").Send()
+
+	// --- When ---
+	tst.LastEntry().NotExpKey("key0")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
 func Test_Entry_Str(t *testing.T) {
 	tst := New(t)
 	log := zerolog.New(tst)

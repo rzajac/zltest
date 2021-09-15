@@ -37,6 +37,20 @@ func (ent *Entry) String() string {
 	return ent.raw
 }
 
+// ExpKey tests log entry has a key.
+func (ent *Entry) ExpKey(key string) {
+	if _, ok := ent.m[key]; !ok {
+		ent.t.Errorf("expected %s field to be present", key)
+	}
+}
+
+// NotExpKey tests log entry has no key.
+func (ent *Entry) NotExpKey(key string) {
+	if _, ok := ent.m[key]; ok {
+		ent.t.Errorf("expected %s field to be not present", key)
+	}
+}
+
 // Str returns log entry key as a string.
 func (ent *Entry) Str(key string) (string, KeyStatus) {
 	if itf, ok := ent.m[key]; ok {
