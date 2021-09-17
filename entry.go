@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -16,10 +17,13 @@ type KeyStatus string
 const (
 	// KeyFound is used when Key found successfully.
 	KeyFound KeyStatus = "KeyFound"
+
 	// KeyBadType is used when Key found, but it's not of expected type.
 	KeyBadType KeyStatus = "KeyBadType"
+
 	// KeyMissing is used when Key is not in the log entry.
 	KeyMissing KeyStatus = "KeyMissing"
+
 	// KeyBadFormat is used when Key found but its format is wrong.
 	KeyBadFormat KeyStatus = "KeyBadFormat"
 )
@@ -39,6 +43,7 @@ func (ent *Entry) String() string {
 
 // ExpKey tests log entry has a key.
 func (ent *Entry) ExpKey(key string) {
+	ent.t.Helper()
 	if _, ok := ent.m[key]; !ok {
 		ent.t.Errorf("expected %s field to be present", key)
 	}
@@ -46,6 +51,7 @@ func (ent *Entry) ExpKey(key string) {
 
 // NotExpKey tests log entry has no key.
 func (ent *Entry) NotExpKey(key string) {
+	ent.t.Helper()
 	if _, ok := ent.m[key]; ok {
 		ent.t.Errorf("expected %s field to be not present", key)
 	}
@@ -53,6 +59,7 @@ func (ent *Entry) NotExpKey(key string) {
 
 // Str returns log entry key as a string.
 func (ent *Entry) Str(key string) (string, KeyStatus) {
+	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
 		if got, ok := itf.(string); ok {
 			return got, KeyFound
@@ -62,8 +69,9 @@ func (ent *Entry) Str(key string) (string, KeyStatus) {
 	return "", KeyMissing
 }
 
-// Float64 returns log entry key as a float64.
+// Float64 returns log entry key as a float64 type.
 func (ent *Entry) Float64(key string) (float64, KeyStatus) {
+	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
 		if got, ok := itf.(float64); ok {
 			return got, KeyFound
@@ -73,8 +81,9 @@ func (ent *Entry) Float64(key string) (float64, KeyStatus) {
 	return 0, KeyMissing
 }
 
-// Bool returns log entry key as a boolean.
+// Bool returns log entry key as a boolean type.
 func (ent *Entry) Bool(key string) (bool, KeyStatus) {
+	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
 		if got, ok := itf.(bool); ok {
 			return got, KeyFound
@@ -87,6 +96,7 @@ func (ent *Entry) Bool(key string) (bool, KeyStatus) {
 // Time returns log entry key as a time.Time. It uses zerolog.TimeFieldFormat
 // to parse the time string representation.
 func (ent *Entry) Time(key string) (time.Time, KeyStatus) {
+	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
 		if got, ok := itf.(string); ok {
 			tim, err := time.Parse(zerolog.TimeFieldFormat, got)
@@ -108,6 +118,15 @@ func (ent *Entry) ExpStr(key string, exp string) {
 	}
 }
 
+// ExpStrContains tests log entry has key, its value is a string, and it
+// contains exp.
+func (ent *Entry) ExpStrContains(key string, exp string) {
+	ent.t.Helper()
+	if err := ent.expStrContains(key, exp); err != "" {
+		ent.t.Error(err)
+	}
+}
+
 func (ent *Entry) expStr(key string, exp string) string {
 	ent.t.Helper()
 	got, status := ent.Str(key)
@@ -122,7 +141,24 @@ func (ent *Entry) expStr(key string, exp string) string {
 		}
 		return ""
 	}
-	return formatError(status, key, "string")
+	return formatError(ent.t, status, key, "string")
+}
+
+func (ent *Entry) expStrContains(key string, exp string) string {
+	ent.t.Helper()
+	got, status := ent.Str(key)
+	if status == KeyFound {
+		if !strings.Contains(got, exp) {
+			return fmt.Sprintf(
+				"expected entry key '%s' to contain '%s' but got '%s'",
+				key,
+				exp,
+				got,
+			)
+		}
+		return ""
+	}
+	return formatError(ent.t, status, key, "string")
 }
 
 // ExpTime tests log entry has key, its value is a string representing time in
@@ -133,6 +169,7 @@ func (ent *Entry) ExpTime(key string, exp time.Time) {
 		ent.t.Error(err)
 	}
 }
+
 func (ent *Entry) expTime(key string, exp time.Time) string {
 	ent.t.Helper()
 	got, status := ent.Time(key)
@@ -146,7 +183,7 @@ func (ent *Entry) expTime(key string, exp time.Time) string {
 		}
 		return ""
 	}
-	return formatError(status, key, "string")
+	return formatError(ent.t, status, key, "string")
 
 }
 
@@ -159,6 +196,7 @@ func (ent *Entry) ExpDur(key string, exp time.Duration) {
 		ent.t.Error(err)
 	}
 }
+
 func (ent *Entry) expDur(key string, exp time.Duration) string {
 	ent.t.Helper()
 	got, status := ent.Float64(key)
@@ -176,7 +214,7 @@ func (ent *Entry) expDur(key string, exp time.Duration) string {
 		}
 		return ""
 	}
-	return formatError(status, key, "number")
+	return formatError(ent.t, status, key, "number")
 }
 
 // ExpBool tests log entry has a key, its value is boolean and equal to exp.
@@ -202,12 +240,13 @@ func (ent *Entry) expBool(key string, exp bool) string {
 		}
 		return ""
 	}
-	return formatError(status, key, "bool")
+	return formatError(ent.t, status, key, "bool")
 }
 
 // ExpLoggedWithin tests log entry was logged at exp time. The actual time
 // may be within +/- diff.
 func (ent *Entry) ExpLoggedWithin(exp time.Time, diff time.Duration) {
+	ent.t.Helper()
 	ent.ExpTimeWithin(zerolog.TimestampFieldName, exp, diff)
 }
 
@@ -228,24 +267,30 @@ func (ent *Entry) ExpTimeWithin(key string, exp time.Time, diff time.Duration) {
 		}
 		return
 	}
-	ent.t.Error(formatError(status, key, "string"))
+	ent.t.Error(formatError(ent.t, status, key, "string"))
 }
 
 // ExpMsg tests log entry message field (zerolog.MessageFieldName) is
 // equal to exp.
 func (ent *Entry) ExpMsg(exp string) {
+	ent.t.Helper()
 	ent.ExpStr(zerolog.MessageFieldName, exp)
 }
+
 func (ent *Entry) expMsg(exp string) string {
+	ent.t.Helper()
 	return ent.expStr(zerolog.MessageFieldName, exp)
 }
 
 // ExpLevel tests log entry level field (zerolog.LevelFieldName) is
 // equal to exp.
 func (ent *Entry) ExpLevel(exp zerolog.Level) {
+	ent.t.Helper()
 	ent.ExpStr(zerolog.LevelFieldName, exp.String())
 }
+
 func (ent *Entry) expLevel(exp zerolog.Level) string {
+	ent.t.Helper()
 	return ent.expStr(zerolog.LevelFieldName, exp.String())
 }
 
@@ -256,6 +301,7 @@ func (ent *Entry) ExpNum(key string, exp float64) {
 		ent.t.Error(err)
 	}
 }
+
 func (ent *Entry) expNum(key string, exp float64) string {
 	ent.t.Helper()
 	got, status := ent.Float64(key)
@@ -272,11 +318,24 @@ func (ent *Entry) expNum(key string, exp float64) string {
 		}
 		return ""
 	}
-	return formatError(status, key, "number")
+	return formatError(ent.t, status, key, "number")
+}
+
+// Map returns log entry key as a map.
+func (ent *Entry) Map(key string) (map[string]interface{}, KeyStatus) {
+	ent.t.Helper()
+	if itf, ok := ent.m[key]; ok {
+		if got, ok := itf.(map[string]interface{}); ok {
+			return got, KeyFound
+		}
+		return nil, KeyBadType
+	}
+	return nil, KeyMissing
 }
 
 // formatError formats error message based on status of log entry key search.
-func formatError(status KeyStatus, key, typ string) string {
+func formatError(t T, status KeyStatus, key, typ string) string {
+	t.Helper()
 	switch status {
 	case KeyMissing:
 		return fmt.Sprintf("expected entry to have key '%s'", key)

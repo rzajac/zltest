@@ -33,7 +33,6 @@ func Test_Entries_ExpEntry(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
-
 	log.Error().Int("key0", 0).Msg("message0")
 	log.Error().Int("key1.1", 1).Bool("key1.2", true).Msg("message1")
 	log.Error().Float64("key2", 2.2).Msg("message2")
@@ -52,14 +51,14 @@ func Test_Entries_ExpEntry(t *testing.T) {
 	ent.ExpMsg("message2")
 }
 
-func Test_Entries_ExpEntry_Fatal(t *testing.T) {
+func Test_Entries_ExpEntry_fatal(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Fatalf", "expected %d%s logged entry to exist", 3, "rd")
 
 	tst := New(mck)
 	log := zerolog.New(tst)
-
 	log.Error().Int("key0", 0).Msg("message0")
 	log.Error().Int("key1.1", 1).Bool("key1.2", true).Msg("message1")
 	log.Error().Float64("key2", 2.2).Msg("message2")
@@ -72,7 +71,29 @@ func Test_Entries_ExpEntry_Fatal(t *testing.T) {
 	assert.Nil(t, ent)
 }
 
-func Test_Entries_Len(t *testing.T) {
+func Test_ordinal(t *testing.T) {
+	tt := []struct {
+		testN string
+
+		num int
+		exp string
+	}{
+		{"1", -1, "th"},
+		{"2", 0, "th"},
+		{"3", 1, "st"},
+		{"4", 2, "nd"},
+		{"5", 3, "rd"},
+		{"6", 4, "th"},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.testN, func(t *testing.T) {
+			assert.Exactly(t, tc.exp, ordinal(tc.num))
+		})
+	}
+}
+
+func Test_Entries_ExpLen(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
@@ -86,14 +107,14 @@ func Test_Entries_Len(t *testing.T) {
 	tst.Entries().ExpLen(3)
 }
 
-func Test_Entries_Len_Error(t *testing.T) {
+func Test_Entries_ExpLen_error(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Errorf", "expected %d entries got %d", 3, 1)
 
 	tst := New(mck)
 	log := zerolog.New(tst)
-
 	log.Error().Int("key0", 0).Msg("message0")
 
 	// --- When ---
@@ -103,7 +124,7 @@ func Test_Entries_Len_Error(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_NotFound(t *testing.T) {
+func Test_Entries_NotExpMsg_notFound(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
@@ -117,20 +138,20 @@ func Test_Entries_NotFound(t *testing.T) {
 	tst.Entries().NotExpMsg("message")
 }
 
-func Test_Entries_Empty(t *testing.T) {
+func Test_Entries_ExpBool_empty(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Error", "no matching log entry found")
-	tst := New(mck)
 
 	// --- When ---
-	tst.Entries().ExpBool("key1", false)
+	New(mck).Entries().ExpBool("key1", false)
 
 	// --- Then ---
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpBool_Found(t *testing.T) {
+func Test_Entries_ExpBool_found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -146,7 +167,8 @@ func Test_Entries_ExpBool_Found(t *testing.T) {
 	// --- Then ---
 	mck.AssertExpectations(t)
 }
-func Test_Entries_ExpBool_NotFound(t *testing.T) {
+
+func Test_Entries_ExpBool_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -164,7 +186,7 @@ func Test_Entries_ExpBool_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpTime_Found(t *testing.T) {
+func Test_Entries_ExpTime_found(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -187,7 +209,7 @@ func Test_Entries_ExpTime_Found(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpTime_NotFound(t *testing.T) {
+func Test_Entries_ExpTime_notFound(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -198,11 +220,10 @@ func Test_Entries_ExpTime_NotFound(t *testing.T) {
 	mck.On("Error", "no matching log entry found")
 
 	exp := time.Now()
-	got := exp.Add(time.Second)
 	tst := New(mck)
 	log := zerolog.New(tst)
 	log.Error().Time("key", time.Now()).Send()
-	log.Error().Time("key", got).Send()
+	log.Error().Time("key", exp.Add(time.Second)).Send()
 	log.Error().Time("key", time.Now()).Send()
 
 	// --- When ---
@@ -212,7 +233,7 @@ func Test_Entries_ExpTime_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpDur_Found(t *testing.T) {
+func Test_Entries_ExpDur_found(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -222,6 +243,7 @@ func Test_Entries_ExpDur_Found(t *testing.T) {
 	mck.On("Helper")
 
 	dur := 42 * time.Second
+
 	tst := New(mck)
 	log := zerolog.New(tst)
 	log.Error().Dur("key", 43*time.Second).Send()
@@ -235,7 +257,7 @@ func Test_Entries_ExpDur_Found(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpDur_NotFound(t *testing.T) {
+func Test_Entries_ExpDur_notFound(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -245,22 +267,20 @@ func Test_Entries_ExpDur_NotFound(t *testing.T) {
 	mck.On("Helper")
 	mck.On("Error", "no matching log entry found")
 
-	got := 43 * time.Second
-	exp := 42 * time.Second
 	tst := New(mck)
 	log := zerolog.New(tst)
 	log.Error().Dur("key", 43*time.Second).Send()
 	log.Error().Time("key", time.Now()).Send()
-	log.Error().Dur("key", got).Send()
+	log.Error().Dur("key", 43*time.Second).Send()
 
 	// --- When ---
-	tst.Entries().ExpDur("key", exp)
+	tst.Entries().ExpDur("key", 42*time.Second)
 
 	// --- Then ---
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpNum_Found(t *testing.T) {
+func Test_Entries_ExpNum_found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -279,7 +299,7 @@ func Test_Entries_ExpNum_Found(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpNum_NotFound(t *testing.T) {
+func Test_Entries_ExpNum_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -299,7 +319,7 @@ func Test_Entries_ExpNum_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_Found(t *testing.T) {
+func Test_Entries_ExpStr_found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -317,7 +337,7 @@ func Test_Entries_ExpString_Found(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_Found_First(t *testing.T) {
+func Test_Entries_ExpStr_foundFirst(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -335,7 +355,7 @@ func Test_Entries_ExpString_Found_First(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_Found_Last(t *testing.T) {
+func Test_Entries_ExpStr_foundLast(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -353,7 +373,7 @@ func Test_Entries_ExpString_Found_Last(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_NotFound(t *testing.T) {
+func Test_Entries_ExpStr_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -372,7 +392,7 @@ func Test_Entries_ExpString_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_Filter_Found(t *testing.T) {
+func Test_Entries_ExpStr_filterFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -391,7 +411,7 @@ func Test_Entries_ExpString_Filter_Found(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_Filter_NotFound(t *testing.T) {
+func Test_Entries_ExpStr_filterNotFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -410,7 +430,7 @@ func Test_Entries_ExpString_Filter_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_NoKey(t *testing.T) {
+func Test_Entries_ExpStr_noKey(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -429,7 +449,7 @@ func Test_Entries_ExpString_NoKey(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_NotExp(t *testing.T) {
+func Test_Entries_NotExpStr(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -447,7 +467,7 @@ func Test_Entries_ExpString_NotExp(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entries_ExpString_NotExp_Found(t *testing.T) {
+func Test_Entries_NotExpStr_found(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -461,6 +481,26 @@ func Test_Entries_ExpString_NotExp_Found(t *testing.T) {
 
 	// --- When ---
 	tst.Entries().NotExpStr("key1", "val1")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entries_Print(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Log", "entries logged so far:")
+	mck.On("Log", `  {"level":"error","key0":"val0"}`)
+	mck.On("Log", `  {"level":"error","key1":"val1"}`)
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
+
+	// --- When ---
+	tst.Entries().Print()
 
 	// --- Then ---
 	mck.AssertExpectations(t)

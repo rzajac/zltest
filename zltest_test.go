@@ -16,8 +16,8 @@ func Test_Tester_Logger(t *testing.T) {
 	log := tst.Logger()
 
 	// --- When ---
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- Then ---
 	assert.Exactly(t, 2, tst.Len())
@@ -29,8 +29,8 @@ func Test_Tester_Len(t *testing.T) {
 	log := zerolog.New(tst)
 
 	// --- When ---
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- Then ---
 	assert.Exactly(t, 2, tst.Len())
@@ -42,11 +42,11 @@ func Test_Tester_String(t *testing.T) {
 	log := zerolog.New(tst)
 
 	// --- When ---
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- Then ---
-	exp := "{\"level\":\"info\",\"keyI\":\"valI\"}\n{\"level\":\"error\",\"keyE\":\"valE\"}\n"
+	exp := "{\"level\":\"info\",\"key0\":\"val0\"}\n{\"level\":\"error\",\"key1\":\"val1\"}\n"
 	assert.Exactly(t, exp, tst.String())
 }
 
@@ -56,8 +56,8 @@ func Test_Tester_Entries(t *testing.T) {
 	log := zerolog.New(tst)
 
 	// --- When ---
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- Then ---
 	assert.Len(t, tst.Entries().Get(), 2)
@@ -69,8 +69,8 @@ func Test_Tester_Filter(t *testing.T) {
 	log := zerolog.New(tst)
 
 	// --- When ---
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 	log.Debug().Str("keyD", "valD").Send()
 
 	// --- Then ---
@@ -80,7 +80,7 @@ func Test_Tester_Filter(t *testing.T) {
 	assert.Len(t, tst.Filter(zerolog.FatalLevel).Get(), 0)
 }
 
-func Test_Tester_Entries_NoEntries(t *testing.T) {
+func Test_Tester_Entries_noEntries(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 
@@ -92,9 +92,10 @@ func Test_Tester_Entries_NoEntries(t *testing.T) {
 	assert.Len(t, ets, 0)
 }
 
-func Test_Tester_Entries_ErrorDecodingEntry(t *testing.T) {
+func Test_Tester_Entries_errorDecodingEntry(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Fatal", mock.AnythingOfType("*json.SyntaxError"))
 
 	tst := New(mck)
@@ -111,18 +112,18 @@ func Test_Tester_FirstEntry(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- When ---
 	got := tst.FirstEntry().String()
 
 	// --- Then ---
-	exp := `{"level":"info","keyI":"valI"}`
+	exp := `{"level":"info","key0":"val0"}`
 	assert.Exactly(t, exp, got)
 }
 
-func Test_Tester_FirstEntry_NoEntries(t *testing.T) {
+func Test_Tester_FirstEntry_noEntries(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 
@@ -134,18 +135,18 @@ func Test_Tester_LastEntry(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- When ---
 	got := tst.LastEntry().String()
 
 	// --- Then ---
-	exp := `{"level":"error","keyE":"valE"}`
+	exp := `{"level":"error","key1":"val1"}`
 	assert.Exactly(t, exp, got)
 }
 
-func Test_Tester_LastEntry_NoEntries(t *testing.T) {
+func Test_Tester_LastEntry_noEntries(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 
@@ -157,8 +158,8 @@ func Test_Tester_Reset(t *testing.T) {
 	// --- Given ---
 	tst := New(t)
 	log := zerolog.New(tst)
-	log.Info().Str("keyI", "valI").Send()
-	log.Error().Str("keyE", "valE").Send()
+	log.Info().Str("key0", "val0").Send()
+	log.Error().Str("key1", "val1").Send()
 
 	// --- When ---
 	tst.Reset()

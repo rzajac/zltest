@@ -21,7 +21,7 @@ type Tester struct {
 // New creates new instance of zerolog tester.
 func New(t T) *Tester {
 	return &Tester{
-		buf: make([]byte, 0),
+		buf: make([]byte, 0, 500),
 		t:   t,
 	}
 }
@@ -55,10 +55,11 @@ func (tst *Tester) String() string {
 }
 
 // Entries returns all logged entries in the order they were logged. It calls
-// Fatal if any of the log entries cannot be decoded.
+// Fatal if any of the log entries cannot be decoded or Scanner error.
 func (tst *Tester) Entries() Entries {
 	tst.mx.RLock()
 	defer tst.mx.RUnlock()
+	tst.t.Helper()
 
 	scn := bufio.NewScanner(bytes.NewReader(tst.buf))
 	ets := make([]*Entry, 0, tst.cnt)
@@ -147,4 +148,22 @@ type T interface {
 	// When printing file and line information, that function will be skipped.
 	// Helper may be called simultaneously from multiple goroutines.
 	Helper()
+
+	// Log formats its arguments using default formatting, analogous to Println,
+	// and records the text in the error log. For tests, the text will be printed only if
+	// the test fails or the -test.v flag is set. For benchmarks, the text is always
+	// printed to avoid having performance depend on the value of the -test.v flag.
+	Log(args ...interface{})
+
+	// Logf formats its arguments according to the format, analogous to Printf, and
+	// records the text in the error log. A final newline is added if not provided. For
+	// tests, the text will be printed only if the test fails or the -test.v flag is
+	// set. For benchmarks, the text is always printed to avoid having performance
+	// depend on the value of the -test.v flag.
+	Logf(format string, args ...interface{})
+
+	// Cleanup registers a function to be called when the test (or subtest) and all its
+	// subtests complete. Cleanup functions will be called in last added,
+	// first called order.
+	Cleanup(func())
 }

@@ -38,9 +38,10 @@ func Test_Entry_ExpKey(t *testing.T) {
 	tst.LastEntry().ExpKey("key0")
 }
 
-func Test_Entry_ExpKey_Error(t *testing.T) {
+func Test_Entry_ExpKey_error(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Errorf", "expected %s field to be present", "key1")
 
 	tst := New(mck)
@@ -66,9 +67,10 @@ func Test_Entry_NotExpKey(t *testing.T) {
 	tst.LastEntry().NotExpKey("key1")
 }
 
-func Test_Entry_NotExpKey_Error(t *testing.T) {
+func Test_Entry_NotExpKey_error(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
+	mck.On("Helper")
 	mck.On("Errorf", "expected %s field to be not present", "key0")
 
 	tst := New(mck)
@@ -175,6 +177,7 @@ func Test_Entry_Time(t *testing.T) {
 	defer func() { zerolog.TimeFieldFormat = old }()
 
 	now := time.Date(2020, 11, 18, 22, 17, 4, 948442004, time.UTC)
+
 	tst := New(t)
 	log := zerolog.New(tst)
 	log.Error().Time("time", now).Str("str", "val").Int("int", 42).Send()
@@ -220,7 +223,7 @@ func Test_Entry(t *testing.T) {
 	entry.ExpLevel(zerolog.ErrorLevel)
 }
 
-func Test_Entry_ExpStr_Equal(t *testing.T) {
+func Test_Entry_ExpStr_equal(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -236,7 +239,7 @@ func Test_Entry_ExpStr_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpStr_NotEqual(t *testing.T) {
+func Test_Entry_ExpStr_notEqual(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -256,7 +259,57 @@ func Test_Entry_ExpStr_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpStr_NotFound(t *testing.T) {
+func Test_Entry_ExpStrContains(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Str("key", "Lorem ipsum dolor sit amet").Send()
+
+	// --- When ---
+	tst.LastEntry().ExpStrContains("key", "ipsum dolor")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpStrContains_error(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Error", "expected entry key 'key' to contain 'bb' but got 'aa cc'")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Str("key", "aa cc").Send()
+
+	// --- When ---
+	tst.LastEntry().ExpStrContains("key", "bb")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpStrContains_wrongType(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Error", "expected entry key 'key' to be 'string'")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Int("key", 123).Send()
+
+	// --- When ---
+	tst.LastEntry().ExpStrContains("key", "bb")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpStr_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -276,7 +329,7 @@ func Test_Entry_ExpStr_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTime_Equal(t *testing.T) {
+func Test_Entry_ExpTime_equal(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -286,6 +339,7 @@ func Test_Entry_ExpTime_Equal(t *testing.T) {
 	mck.On("Helper")
 
 	now := time.Now()
+
 	tst := New(mck)
 	log := zerolog.New(tst)
 	log.Error().Time("key", now).Send()
@@ -297,7 +351,7 @@ func Test_Entry_ExpTime_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTime_NotEqual(t *testing.T) {
+func Test_Entry_ExpTime_notEqual(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -328,7 +382,7 @@ func Test_Entry_ExpTime_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTime_NotFound(t *testing.T) {
+func Test_Entry_ExpTime_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -348,12 +402,13 @@ func Test_Entry_ExpTime_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpDur_Equal(t *testing.T) {
+func Test_Entry_ExpDur_equal(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
 
 	dur := 42 * time.Second
+
 	tst := New(mck)
 	log := zerolog.New(tst)
 	log.Error().Dur("key", dur).Send()
@@ -365,7 +420,7 @@ func Test_Entry_ExpDur_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpDur_NotEqual(t *testing.T) {
+func Test_Entry_ExpDur_notEqual(t *testing.T) {
 	// --- Given ---
 	exp := 42 * time.Second
 	got := 44 * time.Second
@@ -374,7 +429,8 @@ func Test_Entry_ExpDur_NotEqual(t *testing.T) {
 	mck.On("Helper")
 	mck.On(
 		"Error",
-		fmt.Sprintf("expected entry key '%s' to have value '%d' (%s) but got '%d' (%s)",
+		fmt.Sprintf(
+			"expected entry key '%s' to have value '%d' (%s) but got '%d' (%s)",
 			"key",
 			exp/zerolog.DurationFieldUnit,
 			exp.String(),
@@ -394,7 +450,7 @@ func Test_Entry_ExpDur_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpDur_NotFound(t *testing.T) {
+func Test_Entry_ExpDur_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -414,7 +470,7 @@ func Test_Entry_ExpDur_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpBool_Equal(t *testing.T) {
+func Test_Entry_ExpBool_equal(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -430,7 +486,7 @@ func Test_Entry_ExpBool_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpBool_NotEqual(t *testing.T) {
+func Test_Entry_ExpBool_notEqual(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -450,7 +506,7 @@ func Test_Entry_ExpBool_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpBool_NotFound(t *testing.T) {
+func Test_Entry_ExpBool_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -470,7 +526,7 @@ func Test_Entry_ExpBool_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTimeWithin_Equal(t *testing.T) {
+func Test_Entry_ExpTimeWithin_equal(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -493,7 +549,7 @@ func Test_Entry_ExpTimeWithin_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTimeWithin_NotEqual(t *testing.T) {
+func Test_Entry_ExpTimeWithin_notEqual(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -523,7 +579,7 @@ func Test_Entry_ExpTimeWithin_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpTimeWithin_NotFound(t *testing.T) {
+func Test_Entry_ExpTimeWithin_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -543,7 +599,7 @@ func Test_Entry_ExpTimeWithin_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpNum_Equal(t *testing.T) {
+func Test_Entry_ExpNum_equal(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -559,7 +615,7 @@ func Test_Entry_ExpNum_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpNum_NotEqual(t *testing.T) {
+func Test_Entry_ExpNum_notEqual(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -579,7 +635,7 @@ func Test_Entry_ExpNum_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpNum_NotFound(t *testing.T) {
+func Test_Entry_ExpNum_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -599,7 +655,7 @@ func Test_Entry_ExpNum_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpLoggedWithin_Equal(t *testing.T) {
+func Test_Entry_ExpLoggedWithin_equal(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -619,7 +675,7 @@ func Test_Entry_ExpLoggedWithin_Equal(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpLoggedWithin_NotEqual(t *testing.T) {
+func Test_Entry_ExpLoggedWithin_notEqual(t *testing.T) {
 	// --- Given ---
 	old := zerolog.TimeFieldFormat
 	zerolog.TimeFieldFormat = time.RFC3339Nano
@@ -646,7 +702,7 @@ func Test_Entry_ExpLoggedWithin_NotEqual(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
-func Test_Entry_ExpLoggedWithin_NotFound(t *testing.T) {
+func Test_Entry_ExpLoggedWithin_notFound(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
 	mck.On("Helper")
@@ -666,6 +722,55 @@ func Test_Entry_ExpLoggedWithin_NotFound(t *testing.T) {
 	mck.AssertExpectations(t)
 }
 
+func Test_Entry_Map(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+	log.Error().RawJSON("key0", []byte(`{"f0": "v0"}`)).Send()
+
+	// --- When ---
+	m, st := tst.LastEntry().Map("key0")
+
+	// --- Then ---
+	assert.Exactly(t, KeyFound, st)
+
+	exp := map[string]interface{}{
+		"f0": "v0",
+	}
+	assert.Exactly(t, exp, m)
+}
+
+func Test_Entry_Map_error(t *testing.T) {
+	tt := []struct {
+		testN string
+
+		key string
+		st  KeyStatus
+	}{
+		{"1", "key1", KeyBadType},
+		{"2", "key2", KeyMissing},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.testN, func(t *testing.T) {
+			// --- Given ---
+			mck := &TMock{}
+			mck.On("Helper")
+
+			tst := New(mck)
+			log := zerolog.New(tst)
+			log.Error().RawJSON("key0", []byte(`{"f0": "v0"}`)).Str("key1", "v1").Send()
+
+			// --- When ---
+			m, st := tst.LastEntry().Map(tc.key)
+
+			// --- Then ---
+			assert.Exactly(t, tc.st, st)
+			assert.Nil(t, m)
+		})
+	}
+}
+
 func Test_formatError(t *testing.T) {
 	tt := []struct {
 		testN string
@@ -683,11 +788,16 @@ func Test_formatError(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.testN, func(t *testing.T) {
+			// --- Given ---
+			mck := &TMock{}
+			mck.On("Helper")
+
 			// --- When ---
-			got := formatError(tc.status, tc.key, tc.typ)
+			got := formatError(mck, tc.status, tc.key, tc.typ)
 
 			// --- Then ---
 			assert.Exactly(t, tc.exp, got, "test %s", tc.testN)
+			mck.AssertExpectations(t)
 		})
 	}
 }
