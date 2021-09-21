@@ -1,6 +1,10 @@
 package zltest
 
-import "time"
+import (
+	"time"
+
+	"github.com/rs/zerolog"
+)
 
 // Entries represents collection of zerolog log entries.
 type Entries struct {
@@ -46,28 +50,28 @@ func (ets Entries) ExpLen(want int) {
 	}
 }
 
-// ExpStr tests that at least one log entry has key, its value is a
-// string, and it's equal to exp.
+// ExpStr tests that at least one log entry has a field key, its value is
+// a string, and it's equal to exp.
 func (ets Entries) ExpStr(key string, exp string) {
 	ets.t.Helper()
 	ets.exp(func(e *Entry) string { return e.expStr(key, exp) })
 }
 
-// ExpStrContains tests that at least one log entry has key, its value is a
-// string, and it contains exp.
+// ExpStrContains tests that at least one log entry has a field key, its value
+// is a string, and it contains exp.
 func (ets Entries) ExpStrContains(key string, exp string) {
 	ets.t.Helper()
 	ets.exp(func(e *Entry) string { return e.expStrContains(key, exp) })
 }
 
-// NotExpStr tests that no log entry has key, its value is a
+// NotExpStr tests that no log entry has a field key, its value is a
 // string, and it's equal to exp.
 func (ets Entries) NotExpStr(key string, exp string) {
 	ets.t.Helper()
 	ets.notExp(func(e *Entry) string { return e.expStr(key, exp) })
 }
 
-// ExpTime tests that at least one log entry has key, its value is a
+// ExpTime tests that at least one log entry has a field key, its value is a
 // string representing time in zerolog.TimeFieldFormat and it's equal
 // to exp.
 func (ets Entries) ExpTime(key string, exp time.Time) {
@@ -75,7 +79,7 @@ func (ets Entries) ExpTime(key string, exp time.Time) {
 	ets.exp(func(e *Entry) string { return e.expTime(key, exp) })
 }
 
-// NotExpTime tests that no one log entry has key, its value is a
+// NotExpTime tests that no one log entry has a field key, its value is a
 // string representing time in zerolog.TimeFieldFormat and it's equal
 // to exp.
 func (ets Entries) NotExpTime(key string, exp time.Time) {
@@ -83,30 +87,30 @@ func (ets Entries) NotExpTime(key string, exp time.Time) {
 	ets.notExp(func(e *Entry) string { return e.expTime(key, exp) })
 }
 
-// ExpDur tests that at least one log entry has key and its value is
-// equal to exp time.Duration.  The duration vale in the entry is
+// ExpDur tests that at least one log entry has a field key and its value is
+// equal to exp time.Duration. The duration vale in the entry is
 // multiplied by zerolog.DurationFieldUnit before the comparison.
 func (ets Entries) ExpDur(key string, exp time.Duration) {
 	ets.t.Helper()
 	ets.exp(func(e *Entry) string { return e.expDur(key, exp) })
 }
 
-// NotExpDur tests that no log entry has key and its value is
-// equal to exp time.Duration.  The duration vale in the entry is
+// NotExpDur tests that no log entry has a field key and its value is
+// equal to exp time.Duration. The duration vale in the entry is
 // multiplied by zerolog.DurationFieldUnit before the comparison.
 func (ets Entries) NotExpDur(key string, exp time.Duration) {
 	ets.t.Helper()
 	ets.notExp(func(e *Entry) string { return e.expDur(key, exp) })
 }
 
-// ExpBool tests that at lest one entry has a key, its value is
+// ExpBool tests that at lest one entry has a field key, its value is
 // boolean and equal to exp.
 func (ets Entries) ExpBool(key string, exp bool) {
 	ets.t.Helper()
 	ets.exp(func(e *Entry) string { return e.expBool(key, exp) })
 }
 
-// NotExpBool tests that no log entry has a key, its value is
+// NotExpBool tests that no log entry has a field key, its value is
 // boolean and equal to exp.
 func (ets Entries) NotExpBool(key string, exp bool) {
 	ets.t.Helper()
@@ -117,39 +121,39 @@ func (ets Entries) NotExpBool(key string, exp bool) {
 // (zerolog.MessageFieldName) is equal to exp.
 func (ets Entries) ExpMsg(exp string) {
 	ets.t.Helper()
-	ets.exp(func(e *Entry) string { return e.expMsg(exp) })
+	ets.exp(func(e *Entry) string { return e.expStr(zerolog.MessageFieldName, exp) })
 }
 
-// NotExpMsg tests that no log entry message field
-// (zerolog.MessageFieldName) is equal to exp.
+// NotExpMsg tests that none of the log entry message fields
+// (zerolog.MessageFieldName) are equal to exp.
 func (ets Entries) NotExpMsg(exp string) {
 	ets.t.Helper()
-	ets.notExp(func(e *Entry) string { return e.expMsg(exp) })
+	ets.notExp(func(e *Entry) string { return e.expStr(zerolog.MessageFieldName, exp) })
 }
 
 // ExpError tests that at least one log entry error field
 // (zerolog.ErrorFieldName) is equal to exp.
 func (ets Entries) ExpError(exp string) {
 	ets.t.Helper()
-	ets.exp(func(e *Entry) string { return e.expError(exp) })
+	ets.exp(func(e *Entry) string { return e.expStr(zerolog.ErrorFieldName, exp) })
 }
 
-// NotExpError tests that no log entry error field
-// (zerolog.ErrorFieldName) is equal to exp.
+// NotExpError tests that none of the log entry message fields
+// (zerolog.ErrorFieldName) are equal to exp.
 func (ets Entries) NotExpError(exp string) {
 	ets.t.Helper()
-	ets.notExp(func(e *Entry) string { return e.expError(exp) })
+	ets.notExp(func(e *Entry) string { return e.expStr(zerolog.ErrorFieldName, exp) })
 }
 
-// ExpNum tests that at least one log entry has key and its numerical
+// ExpNum tests that at least one log entry has a field key and its numerical
 // value is equal to exp.
 func (ets Entries) ExpNum(key string, exp float64) {
 	ets.t.Helper()
 	ets.exp(func(e *Entry) string { return e.expNum(key, exp) })
 }
 
-// NotExpNum tests that at least one log entry has key and its numerical
-// value is equal to exp.
+// NotExpNum tests that at least one log entry has a field key and its
+// numerical value is equal to exp.
 func (ets Entries) NotExpNum(key string, exp float64) {
 	ets.t.Helper()
 	ets.notExp(func(e *Entry) string { return e.expNum(key, exp) })
@@ -166,15 +170,6 @@ func (ets Entries) exp(f func(*Entry) string) {
 	ets.t.Error("no matching log entry found")
 }
 
-// Print prints zerolog log entries.
-func (ets Entries) Print() {
-	ets.t.Helper()
-	ets.t.Log("entries logged so far:")
-	for _, e := range ets.e {
-		ets.t.Log("  " + e.raw)
-	}
-}
-
 func (ets Entries) notExp(f func(*Entry) string) {
 	ets.t.Helper()
 	e := ets.Get()
@@ -182,5 +177,14 @@ func (ets Entries) notExp(f func(*Entry) string) {
 		if f(e[ent]) == "" {
 			ets.t.Error("matching log entry found")
 		}
+	}
+}
+
+// Print prints all zerolog log entries.
+func (ets Entries) Print() {
+	ets.t.Helper()
+	ets.t.Log("entries logged so far:")
+	for _, e := range ets.e {
+		ets.t.Log("  " + e.raw)
 	}
 }

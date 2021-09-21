@@ -15,20 +15,20 @@ import (
 type KeyStatus string
 
 const (
-	// KeyFound is used when Key found successfully.
+	// KeyFound is used when a field key is found successfully.
 	KeyFound KeyStatus = "KeyFound"
 
-	// KeyBadType is used when Key found, but it's not of expected type.
+	// KeyBadType is used when a field key is found, but it's not of expected type.
 	KeyBadType KeyStatus = "KeyBadType"
 
-	// KeyMissing is used when Key is not in the log entry.
+	// KeyMissing is used when a field key is not in the log entry.
 	KeyMissing KeyStatus = "KeyMissing"
 
-	// KeyBadFormat is used when Key found but its format is wrong.
+	// KeyBadFormat is used when a field key is found but its format is wrong.
 	KeyBadFormat KeyStatus = "KeyBadFormat"
 )
 
-// Entry represents zerolog log entry.
+// Entry represents one zerolog log entry.
 type Entry struct {
 	raw string                 // Entry as it was written to the writer.
 	m   map[string]interface{} // JSON decoded log entry.
@@ -41,7 +41,7 @@ func (ent *Entry) String() string {
 	return ent.raw
 }
 
-// ExpKey tests log entry has a key.
+// ExpKey tests log entry has a field key.
 func (ent *Entry) ExpKey(key string) {
 	ent.t.Helper()
 	if _, ok := ent.m[key]; !ok {
@@ -49,7 +49,7 @@ func (ent *Entry) ExpKey(key string) {
 	}
 }
 
-// NotExpKey tests log entry has no key.
+// NotExpKey tests log entry has no field key.
 func (ent *Entry) NotExpKey(key string) {
 	ent.t.Helper()
 	if _, ok := ent.m[key]; ok {
@@ -57,7 +57,7 @@ func (ent *Entry) NotExpKey(key string) {
 	}
 }
 
-// Str returns log entry key as a string.
+// Str returns log entry field key as a string.
 func (ent *Entry) Str(key string) (string, KeyStatus) {
 	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
@@ -69,19 +69,11 @@ func (ent *Entry) Str(key string) (string, KeyStatus) {
 	return "", KeyMissing
 }
 
-// ExpStr tests log entry has key, its value is a string, and it's equal to exp.
+// ExpStr tests log entry has a field key, its value is a string,
+// and it's equal to exp.
 func (ent *Entry) ExpStr(key string, exp string) {
 	ent.t.Helper()
 	if err := ent.expStr(key, exp); err != "" {
-		ent.t.Error(err)
-	}
-}
-
-// ExpStrContains tests log entry has key, its value is a string, and it
-// contains exp.
-func (ent *Entry) ExpStrContains(key string, exp string) {
-	ent.t.Helper()
-	if err := ent.expStrContains(key, exp); err != "" {
 		ent.t.Error(err)
 	}
 }
@@ -103,6 +95,15 @@ func (ent *Entry) expStr(key string, exp string) string {
 	return formatError(ent.t, status, key, "string")
 }
 
+// ExpStrContains tests log entry has a field key, its value is a string,
+// and it contains exp.
+func (ent *Entry) ExpStrContains(key string, exp string) {
+	ent.t.Helper()
+	if err := ent.expStrContains(key, exp); err != "" {
+		ent.t.Error(err)
+	}
+}
+
 func (ent *Entry) expStrContains(key string, exp string) string {
 	ent.t.Helper()
 	got, status := ent.Str(key)
@@ -120,7 +121,7 @@ func (ent *Entry) expStrContains(key string, exp string) string {
 	return formatError(ent.t, status, key, "string")
 }
 
-// Float64 returns log entry key as a float64 type.
+// Float64 returns log entry field key as a float64 type.
 func (ent *Entry) Float64(key string) (float64, KeyStatus) {
 	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
@@ -132,7 +133,7 @@ func (ent *Entry) Float64(key string) (float64, KeyStatus) {
 	return 0, KeyMissing
 }
 
-// Bool returns log entry key as a boolean type.
+// Bool returns log entry field key as a boolean type.
 func (ent *Entry) Bool(key string) (bool, KeyStatus) {
 	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
@@ -144,13 +145,12 @@ func (ent *Entry) Bool(key string) (bool, KeyStatus) {
 	return false, KeyMissing
 }
 
-// ExpBool tests log entry has a key, its value is boolean and equal to exp.
+// ExpBool tests log entry has a field key, its value is boolean and equal to exp.
 func (ent *Entry) ExpBool(key string, exp bool) {
 	ent.t.Helper()
 	if err := ent.expBool(key, exp); err != "" {
 		ent.t.Error(err)
 	}
-
 }
 
 func (ent *Entry) expBool(key string, exp bool) string {
@@ -170,8 +170,8 @@ func (ent *Entry) expBool(key string, exp bool) string {
 	return formatError(ent.t, status, key, "bool")
 }
 
-// Time returns log entry key as a time.Time. It uses zerolog.TimeFieldFormat
-// to parse the time string representation.
+// Time returns log entry field  key as a time.Time. It uses
+// zerolog.TimeFieldFormat to parse the time string representation.
 func (ent *Entry) Time(key string) (time.Time, KeyStatus) {
 	ent.t.Helper()
 	if itf, ok := ent.m[key]; ok {
@@ -187,33 +187,13 @@ func (ent *Entry) Time(key string) (time.Time, KeyStatus) {
 	return time.Time{}, KeyMissing
 }
 
-// ExpTime tests log entry has key, its value is a string representing time in
-// zerolog.TimeFieldFormat and it's equal to exp.
+// ExpTime tests log entry has a field key, its value is a string representing
+// time in zerolog.TimeFieldFormat and it's equal to exp.
 func (ent *Entry) ExpTime(key string, exp time.Time) {
 	ent.t.Helper()
 	if err := ent.expTime(key, exp); err != "" {
 		ent.t.Error(err)
 	}
-}
-
-// ExpTimeWithin tests log entry has key, its value is a string representing
-// time in zerolog.TimeFieldFormat and it's equal to exp time. The actual time
-// may be within +/- diff.
-func (ent *Entry) ExpTimeWithin(key string, exp time.Time, diff time.Duration) {
-	ent.t.Helper()
-	got, status := ent.Time(key)
-	if status == KeyFound {
-		gotD := math.Abs(float64(exp.Sub(got)))
-		if gotD > float64(diff) {
-			ent.t.Errorf("expected entry '%s' to be within '%s' but difference is '%s'",
-				key,
-				diff.String(),
-				time.Duration(gotD).String(),
-			)
-		}
-		return
-	}
-	ent.t.Error(formatError(ent.t, status, key, "string"))
 }
 
 func (ent *Entry) expTime(key string, exp time.Time) string {
@@ -233,9 +213,29 @@ func (ent *Entry) expTime(key string, exp time.Time) string {
 
 }
 
-// ExpDur tests log entry has key and its value is equal to exp time.Duration.
-// The duration vale in the entry is multiplied by zerolog.DurationFieldUnit
-// before the comparison.
+// ExpTimeWithin tests log entry has a field key, its value is a string
+// representing time in zerolog.TimeFieldFormat and it's equal to exp time.
+// The actual time may be within +/- diff.
+func (ent *Entry) ExpTimeWithin(key string, exp time.Time, diff time.Duration) {
+	ent.t.Helper()
+	got, status := ent.Time(key)
+	if status == KeyFound {
+		gotD := math.Abs(float64(exp.Sub(got)))
+		if gotD > float64(diff) {
+			ent.t.Errorf("expected entry '%s' to be within '%s' but difference is '%s'",
+				key,
+				diff.String(),
+				time.Duration(gotD).String(),
+			)
+		}
+		return
+	}
+	ent.t.Error(formatError(ent.t, status, key, "string"))
+}
+
+// ExpDur tests log entry has a field key and its value is equal to exp
+// time.Duration. The duration vale in the entry is multiplied by
+// zerolog.DurationFieldUnit before the comparison.
 func (ent *Entry) ExpDur(key string, exp time.Duration) {
 	ent.t.Helper()
 	if err := ent.expDur(key, exp); err != "" {
@@ -277,21 +277,11 @@ func (ent *Entry) ExpMsg(exp string) {
 	ent.ExpStr(zerolog.MessageFieldName, exp)
 }
 
-func (ent *Entry) expMsg(exp string) string {
-	ent.t.Helper()
-	return ent.expStr(zerolog.MessageFieldName, exp)
-}
-
 // ExpError tests log entry message field (zerolog.ErrorFieldName) is
 // equal to exp.
 func (ent *Entry) ExpError(exp string) {
 	ent.t.Helper()
 	ent.ExpStr(zerolog.ErrorFieldName, exp)
-}
-
-func (ent *Entry) expError(exp string) string {
-	ent.t.Helper()
-	return ent.expStr(zerolog.ErrorFieldName, exp)
 }
 
 // ExpLevel tests log entry level field (zerolog.LevelFieldName) is
@@ -301,12 +291,7 @@ func (ent *Entry) ExpLevel(exp zerolog.Level) {
 	ent.ExpStr(zerolog.LevelFieldName, exp.String())
 }
 
-func (ent *Entry) expLevel(exp zerolog.Level) string {
-	ent.t.Helper()
-	return ent.expStr(zerolog.LevelFieldName, exp.String())
-}
-
-// ExpNum tests log entry has key and its numerical value is equal to exp.
+// ExpNum tests log entry has a field key and its numerical value is equal to exp.
 func (ent *Entry) ExpNum(key string, exp float64) {
 	ent.t.Helper()
 	if err := ent.expNum(key, exp); err != "" {
