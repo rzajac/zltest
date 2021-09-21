@@ -2,7 +2,6 @@
 package zltest
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"sync"
@@ -61,22 +60,24 @@ func (tst *Tester) Entries() Entries {
 	defer tst.mx.RUnlock()
 	tst.t.Helper()
 
-	scn := bufio.NewScanner(bytes.NewReader(tst.buf))
 	ets := make([]*Entry, 0, tst.cnt)
-	for scn.Scan() {
+
+	var off int64
+	dec := json.NewDecoder(bytes.NewReader(tst.buf))
+	for dec.More() {
 		m := make(map[string]interface{})
-		if err := json.Unmarshal(scn.Bytes(), &m); err != nil {
+		if err := dec.Decode(&m); err != nil {
 			tst.t.Fatal(err)
+			return Entries{t: tst.t}
 		}
+
+		tmp := tst.buf[off:dec.InputOffset()]
+		off = dec.InputOffset()
 		ets = append(ets, &Entry{
-			raw: scn.Text(),
+			raw: string(bytes.TrimSpace(tmp)),
 			m:   m,
 			t:   tst.t,
 		})
-	}
-
-	if err := scn.Err(); err != nil {
-		tst.t.Fatal(err)
 	}
 
 	return Entries{e: ets, t: tst.t}
