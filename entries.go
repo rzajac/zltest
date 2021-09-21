@@ -127,6 +127,20 @@ func (ets Entries) NotExpMsg(exp string) {
 	ets.notExp(func(e *Entry) string { return e.expMsg(exp) })
 }
 
+// ExpError tests that at least one log entry error field
+// (zerolog.ErrorFieldName) is equal to exp.
+func (ets Entries) ExpError(exp string) {
+	ets.t.Helper()
+	ets.exp(func(e *Entry) string { return e.expError(exp) })
+}
+
+// NotExpError tests that no log entry error field
+// (zerolog.ErrorFieldName) is equal to exp.
+func (ets Entries) NotExpError(exp string) {
+	ets.t.Helper()
+	ets.notExp(func(e *Entry) string { return e.expError(exp) })
+}
+
 // ExpNum tests that at least one log entry has key and its numerical
 // value is equal to exp.
 func (ets Entries) ExpNum(key string, exp float64) {
