@@ -1,6 +1,7 @@
 package zltest
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -650,6 +651,78 @@ func Test_Entry_ExpNum_notFound(t *testing.T) {
 
 	// --- When ---
 	tst.LastEntry().ExpNum("some_key", 1.23)
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpError_found(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.LastEntry().ExpError("test message")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpError_notFound(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On(
+		"Error",
+		"expected entry key 'error' to have value 'other message' but got 'test message'",
+	)
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.LastEntry().ExpError("other message")
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpErr_found(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.LastEntry().ExpErr(errors.New("test message"))
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entry_ExpErr_notFound(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On(
+		"Error",
+		"expected entry key 'error' to have value 'other message' but got 'test message'",
+	)
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.LastEntry().ExpErr(errors.New("other message"))
 
 	// --- Then ---
 	mck.AssertExpectations(t)

@@ -1,6 +1,7 @@
 package zltest
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -501,6 +502,72 @@ func Test_Entries_Print(t *testing.T) {
 
 	// --- When ---
 	tst.Entries().Print()
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entries_ExpErr(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.Entries().ExpErr(errors.New("test message"))
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entries_ExpErr_notFound(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Error", "no matching log entry found")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.Entries().ExpErr(errors.New("other message"))
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entries_NotExpErr_notFound(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.Entries().NotExpErr(errors.New("other message"))
+
+	// --- Then ---
+	mck.AssertExpectations(t)
+}
+
+func Test_Entries_NotExpErr_found(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Error", "matching log entry found")
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+	log.Error().Err(errors.New("test message")).Send()
+
+	// --- When ---
+	tst.Entries().NotExpErr(errors.New("test message"))
 
 	// --- Then ---
 	mck.AssertExpectations(t)

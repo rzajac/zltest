@@ -284,6 +284,13 @@ func (ent *Entry) ExpError(exp string) {
 	ent.ExpStr(zerolog.ErrorFieldName, exp)
 }
 
+// ExpErr tests log entry message field (zerolog.ErrorFieldName) is
+// equal to exp error message.
+func (ent *Entry) ExpErr(exp error) {
+	ent.t.Helper()
+	ent.ExpError(exp.Error())
+}
+
 // ExpLevel tests log entry level field (zerolog.LevelFieldName) is
 // equal to exp.
 func (ent *Entry) ExpLevel(exp zerolog.Level) {
