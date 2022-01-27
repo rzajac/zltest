@@ -57,6 +57,14 @@ func (ent *Entry) NotExpKey(key string) {
 	}
 }
 
+// ExpNumKeys tests log entry has n keys.
+func (ent *Entry) ExpNumKeys(n int) {
+	ent.t.Helper()
+	if len(ent.m) != n {
+		ent.t.Errorf("expected %d fields but got %d", n, len(ent.m))
+	}
+}
+
 // Str returns log entry field key as a string.
 func (ent *Entry) Str(key string) (string, KeyStatus) {
 	ent.t.Helper()

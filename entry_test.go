@@ -68,6 +68,42 @@ func Test_Entry_NotExpKey(t *testing.T) {
 	tst.LastEntry().NotExpKey("key1")
 }
 
+func Test_Entry_ExpNumKeys(t *testing.T) {
+	// --- Given ---
+	tst := New(t)
+	log := zerolog.New(tst)
+
+	// --- When ---
+	log.Error().
+		Str("k0", "v0").
+		Str("k1", "v1").
+		Str("k2", "v2").
+		Send()
+
+	// --- Then ---
+	tst.LastEntry().ExpNumKeys(4)
+}
+
+func Test_Entry_ExpNumKeys_error(t *testing.T) {
+	// --- Given ---
+	mck := &TMock{}
+	mck.On("Helper")
+	mck.On("Errorf", "expected %d fields but got %d", 5, 4)
+
+	tst := New(mck)
+	log := zerolog.New(tst)
+
+	// --- When ---
+	log.Error().
+		Str("k0", "v0").
+		Str("k1", "v1").
+		Str("k2", "v2").
+		Send()
+
+	// --- Then ---
+	tst.LastEntry().ExpNumKeys(5)
+}
+
 func Test_Entry_NotExpKey_error(t *testing.T) {
 	// --- Given ---
 	mck := &TMock{}
